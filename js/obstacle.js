@@ -16,7 +16,6 @@ class Obstacle {
     }
 
     update() {
-        // Obstáculo acompanha a dificuldade
         this.bitmap.x -= 8 * difficulty;
     }
 
@@ -33,23 +32,70 @@ class Obstacle {
     }
 }
 
+class SkyObstacle {
+    constructor(stage) {
+        this.stage = stage;
+
+        const spriteData = {
+            images: ["assets/obstacles/Forward.png"],
+            frames: { width: 48, height: 48 },
+            animations: {
+                fly: [0, 3, "fly", 0.2]
+            }
+        };
+
+        const sheet = new createjs.SpriteSheet(spriteData);
+        this.sprite = new createjs.Sprite(sheet, "fly");
+
+        this.sprite.scaleX = this.sprite.scaleY = 1.6;
+
+        this.sprite.x = 960 + Math.random() * 300;
+        this.sprite.y = 320;
+
+        stage.addChild(this.sprite);
+    }
+
+    update() {
+        this.sprite.x -= 10 * difficulty;
+    }
+
+    isOffscreen() {
+        return this.sprite.x < -150;
+    }
+
+    getBounds() {
+        return this.sprite.getTransformedBounds();
+    }
+
+    destroy() {
+        this.stage.removeChild(this.sprite);
+    }
+}
+
+
 class ObstacleManager {
     constructor(stage) {
         this.stage = stage;
         this.obstacles = [];
         this.timer = 0;
+
         this.spawnInterval = 60;
+        this.skyChance = 0.35;
     }
 
     update() {
         this.timer++;
 
-        // Spawn fica mais rápido com o tempo, mas nunca menos que 20
-        this.spawnInterval = Math.max(20, 60 / difficulty);
+        this.spawnInterval = Math.max(25, 60 / difficulty);
 
         if (this.timer >= this.spawnInterval) {
             this.timer = 0;
-            this.obstacles.push(new Obstacle(this.stage));
+
+            if (Math.random() < this.skyChance) {
+                this.obstacles.push(new SkyObstacle(this.stage));
+            } else {
+                this.obstacles.push(new Obstacle(this.stage));
+            }
         }
 
         this.obstacles.forEach(o => o.update());
@@ -61,5 +107,17 @@ class ObstacleManager {
             }
             return true;
         });
+    }
+
+    stop() {
+        this.obstacles.forEach(o => {
+            if (o.sprite) o.sprite.stop();
+        });
+    }
+
+    reset() {
+        this.obstacles.forEach(o => o.destroy());
+        this.obstacles = [];
+        this.timer = 0;
     }
 }

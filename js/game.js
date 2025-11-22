@@ -7,9 +7,8 @@ let scoreText, highscoreText, hudBg;
 let gameOverContainer;
 let bgContainer, gameContainer, uiContainer;
 let difficulty = 1;
-
 let musicInstance = null;
-let musicOn = true; // música começa ligada
+let musicOn = true;
 
 function init() {
     const canvas = document.getElementById("gameCanvas");
@@ -56,7 +55,6 @@ function init() {
     createjs.Ticker.framerate = 60;
     createjs.Ticker.on("tick", update);
 
-    // CONTROLES
     document.addEventListener("keydown", (e) => {
         if (gameOver) return;
         if (!player.isDead && e.code === "ArrowUp") {
