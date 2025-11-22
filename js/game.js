@@ -5,6 +5,8 @@ let gameOver = false;
 
 let bgContainer, gameContainer, uiContainer;
 
+let difficulty = 1; // dificuldade inicial
+
 function init() {
     const canvas = document.getElementById("gameCanvas");
     stage = new createjs.Stage(canvas);
@@ -28,7 +30,6 @@ function init() {
     });
 }
 
-
 function loadBackground() {
     const filenames = ["fundo.png", "chao.png"];
     
@@ -36,6 +37,7 @@ function loadBackground() {
         const img = new Image();
         img.src = encodeURI("assets/background/" + file);
         img.onload = () => {
+
         const scale = 0.5;
 
         const bmp1 = new createjs.Bitmap(img);
@@ -44,22 +46,18 @@ function loadBackground() {
         bmp1.scaleX = bmp1.scaleY = scale;
         bmp2.scaleX = bmp2.scaleY = scale;
 
-        // altura REAL após escala
         const scaledWidth = img.width * scale;
         const scaledHeight = img.height * scale;
 
-        // altura onde o chão deve ficar
-        const groundY = 502
-
-        // posiciona certinho encostado no chão
+        const groundY = 502;
         const yPos = groundY - scaledHeight;
+
         bmp1.y = bmp2.y = yPos;
 
-        // posicionamento horizontal correto
         bmp1.x = 0;
         bmp2.x = scaledWidth;
 
-        stage.addChild(bmp1, bmp2);
+        bgContainer.addChild(bmp1, bmp2);
 
         bgLayers.push({
             bmp1,
@@ -67,17 +65,14 @@ function loadBackground() {
             speed: 8,
             width: scaledWidth
         });
-
-        bgContainer.addChild(bmp1, bmp2);
-
         };
-    })
+    });
 }
 
 function updateBackground() {
     bgLayers.forEach(layer => {
-        layer.bmp1.x -= layer.speed;
-        layer.bmp2.x -= layer.speed;
+        layer.bmp1.x -= layer.speed * difficulty;
+        layer.bmp2.x -= layer.speed * difficulty;
 
         const w = layer.width;
 
@@ -92,6 +87,9 @@ function updateBackground() {
 
 function update() {
     if (gameOver) return;
+
+    // dificuldade aumenta suave ao longo do tempo
+    difficulty += 0.00005;
 
     updateBackground();
     player.update();

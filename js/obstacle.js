@@ -8,6 +8,7 @@ class Obstacle {
         this.bitmap = new createjs.Bitmap(img);
         this.bitmap.scaleX = 0.2;
         this.bitmap.scaleY = 0.2;
+
         this.bitmap.x = 960 + Math.random() * 200;
         this.bitmap.y = 400;
 
@@ -15,7 +16,8 @@ class Obstacle {
     }
 
     update() {
-        this.bitmap.x -= 8;
+        // Obstáculo acompanha a dificuldade
+        this.bitmap.x -= 8 * difficulty;
     }
 
     isOffscreen() {
@@ -42,12 +44,16 @@ class ObstacleManager {
     update() {
         this.timer++;
 
+        // Spawn fica mais rápido com o tempo, mas nunca menos que 20
+        this.spawnInterval = Math.max(20, 60 / difficulty);
+
         if (this.timer >= this.spawnInterval) {
             this.timer = 0;
             this.obstacles.push(new Obstacle(this.stage));
         }
 
         this.obstacles.forEach(o => o.update());
+
         this.obstacles = this.obstacles.filter(o => {
             if (o.isOffscreen()) {
                 o.destroy();
