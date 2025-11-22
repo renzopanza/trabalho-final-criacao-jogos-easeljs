@@ -3,13 +3,13 @@ class Obstacle {
         this.stage = stage;
 
         const img = new Image();
-        img.src = encodeURI("assets/obstacles/Group 4 - 1.gif");
+        img.src = encodeURI("assets/obstacles/Spike.png");
 
         this.bitmap = new createjs.Bitmap(img);
-        this.bitmap.scaleX = 2;
-        this.bitmap.scaleY = 2;
+        this.bitmap.scaleX = 0.2;
+        this.bitmap.scaleY = 0.2;
         this.bitmap.x = 960 + Math.random() * 200;
-        this.bitmap.y = 360;
+        this.bitmap.y = 400;
 
         stage.addChild(this.bitmap);
     }

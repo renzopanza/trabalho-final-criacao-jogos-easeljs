@@ -7,16 +7,16 @@ class Player {
         this.idleFrames = [];
 
         const loadFrames = (prefix, count, targetArray) => {
-            for (let i = 1; i <= count; i++) {
+            for (let i = 0; i <= count; i++) {
                 const img = new Image();
-                img.src = encodeURI(`assets/dino/${prefix} (${i}).png`);
+                img.src = encodeURI(`assets/ninja/${prefix}__00${i}.png`);
                 targetArray.push(img);
             }
         };
 
-        loadFrames('Run', 8, this.runFrames);
+        loadFrames('Run', 9, this.runFrames);
         loadFrames('Jump', 12, this.jumpFrames);
-        loadFrames('Idle', 10, this.idleFrames);
+        //loadFrames('Idle_', 10, this.idleFrames);
 
         this.currentFrames = this.runFrames;
         this.frameIndex = 0;
@@ -24,14 +24,13 @@ class Player {
         this.framesPerImage = 6;
 
         this.bitmap = new createjs.Bitmap(this.currentFrames[0]);
-        this.bitmap.scaleX = 3;
-        this.bitmap.scaleY = 3;
-        this.bitmap.x = 120;
-        this.bitmap.y = 330;
+        this.bitmap.scaleX = 0.2;
+        this.bitmap.scaleY = 0.2;
+        this.bitmap.y = 360;
 
         this.velY = 0;
         this.isJumping = false;
-        this.gravity = 1.1;
+        this.gravity = 1;
 
         stage.addChild(this.bitmap);
     }
@@ -41,8 +40,8 @@ class Player {
             this.velY += this.gravity;
             this.bitmap.y += this.velY;
 
-            if (this.bitmap.y >= 330) {
-                this.bitmap.y = 330;
+            if (this.bitmap.y >= 360) {
+                this.bitmap.y = 360;
                 this.isJumping = false;
                 this._switchTo(this.runFrames);
             }
