@@ -24,6 +24,7 @@ function init() {
     createjs.Sound.registerSound("assets/sound effects/ES_Trilha sonora 2.mp3", "bgm");
     createjs.Sound.registerSound("assets/sound effects/ES_jump.mp3", "jump");
     createjs.Sound.registerSound("assets/sound effects/ES_Damage.mp3", "hit");
+    createjs.Sound.registerSound("assets/sound effects/ES_GameOver.mp3", "gameover");
 
     createjs.Sound.on("fileload", startMusic);
 
@@ -115,10 +116,12 @@ function createMusicButton() {
 function startMusic() {
     if (!musicOn) return;
 
-    musicInstance = createjs.Sound.play("bgm", {
-        loop: -1,
-        volume: 0.3
-    });
+    if (!musicInstance) {
+        musicInstance = createjs.Sound.play("bgm", {
+            loop: -1,
+            volume: 0.3
+        });
+    }
 }
 
 function createGameOverScreen() {
@@ -267,6 +270,8 @@ function update() {
 
                 setTimeout(() => {
                     gameOver = true;
+
+                    createjs.Sound.play("gameover", { volume: 0.7 });
 
                     if (score > highscore) {
                         highscore = Math.floor(score);
