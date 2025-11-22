@@ -22,12 +22,10 @@ function init() {
 
     stage.addChild(bgContainer, gameContainer, uiContainer);
 
-    // 🔊 REGISTRA SONS
     createjs.Sound.registerSound("assets/sound effects/ES_Trilha sonora 2.mp3", "bgm");
     createjs.Sound.registerSound("assets/sound effects/ES_jump.mp3", "jump");
     createjs.Sound.registerSound("assets/sound effects/ES_Damage.mp3", "hit");
 
-    // Quando o arquivo da música carregar → começar música
     createjs.Sound.on("fileload", startMusic);
 
     loadBackground();
@@ -52,21 +50,27 @@ function init() {
     highscoreText.shadow = new createjs.Shadow("#000", 2, 2, 4);
     uiContainer.addChild(highscoreText);
 
-    // Criar o botão de música
     createMusicButton();
-
-    // Garante que UI sempre fica por cima
     stage.setChildIndex(uiContainer, stage.numChildren - 1);
 
     createjs.Ticker.framerate = 60;
     createjs.Ticker.on("tick", update);
 
-    // Pulo + som de pulo
+    // CONTROLES
     document.addEventListener("keydown", (e) => {
-        if (e.code === "Space") {
+        if (gameOver) return;
+        if (!player.isDead && e.code === "ArrowUp") {
             player.jump();
             createjs.Sound.play("jump", { volume: 0.6 });
         }
+        if (!player.isDead && e.code === "ArrowDown") {
+            player.duck();
+        }
+    });
+
+    document.addEventListener("keyup", (e) => {
+        if (gameOver) return;
+        if (!player.isDead && e.code === "ArrowDown") player.standUp();
     });
 
     createGameOverScreen();
@@ -107,7 +111,6 @@ function createMusicButton() {
     button.on("click", toggleMusic);
 
     uiContainer.addChild(button);
-
     uiContainer.setChildIndex(button, uiContainer.numChildren - 1);
 }
 
@@ -160,39 +163,47 @@ function createGameOverScreen() {
 
 function loadBackground() {
     const filenames = ["fundo.png", "chao.png"];
-    
-    filenames.forEach(file => {
+    const loaded = [];
+    let count = 0;
+
+    filenames.forEach((file, index) => {
         const img = new Image();
         img.src = encodeURI("assets/background/" + file);
         img.onload = () => {
+            loaded[index] = img;
+            count++;
 
-            const scale = 0.5;
+            if (count === filenames.length) {
+                loaded.forEach(img => {
+                    const scale = 0.5;
+                    const bmp1 = new createjs.Bitmap(img);
+                    const bmp2 = new createjs.Bitmap(img);
 
-            const bmp1 = new createjs.Bitmap(img);
-            const bmp2 = new createjs.Bitmap(img);
+                    bmp1.scaleX = bmp1.scaleY = scale;
+                    bmp2.scaleX = bmp2.scaleY = scale;
 
-            bmp1.scaleX = bmp1.scaleY = scale;
-            bmp2.scaleX = bmp2.scaleY = scale;
+                    const scaledWidth = img.width * scale;
+                    const scaledHeight = img.height * scale;
 
-            const scaledWidth = img.width * scale;
-            const scaledHeight = img.height * scale;
+                    const groundY = 502;
+                    const yPos = groundY - scaledHeight;
 
-            const groundY = 502;
-            const yPos = groundY - scaledHeight;
+                    bmp1.y = bmp2.y = yPos;
 
-            bmp1.y = bmp2.y = yPos;
+                    bmp1.x = 0;
+                    bmp2.x = scaledWidth;
 
-            bmp1.x = 0;
-            bmp2.x = scaledWidth;
+                    bgContainer.addChild(bmp1, bmp2);
 
-            bgContainer.addChild(bmp1, bmp2);
-
-            bgLayers.push({
-                bmp1,
-                bmp2,
-                speed: 8,
-                width: scaledWidth
-            });
+                    bgLayers.push({
+                        bmp1,
+                        bmp2,
+                        speed: 8,
+                        defaultSpeed: 8,
+                        width: scaledWidth
+                    });
+                });
+            }
         };
     });
 }
@@ -213,35 +224,73 @@ function updateBackground() {
 }
 
 function update() {
-    if (gameOver) return;
+    if (gameOver) {
+        stage.update();
+        return;
+    }
 
-    difficulty += 0.00005;
+    if (!player || !player.isDead) {
+        difficulty += 0.00005;
+    }
 
-    updateBackground();
-    player.update();
-    obstacleManager.update();
+    if (!player || !player.isDead) {
+        updateBackground();
+        obstacleManager.update();
+    }
 
-    obstacleManager.obstacles.forEach(o => {
-        if (Collision.checkRect(player, o)) {
+    if (player) player.update();
 
-            // 🔊 SOM DE IMPACTO AO BATER NO ESPINHO
-            createjs.Sound.play("hit", { volume: 0.7 });
+    if (player && !player.isDead) {
+        for (let i = 0; i < obstacleManager.obstacles.length; i++) {
+            const o = obstacleManager.obstacles[i];
 
-            gameOver = true;
+            if (Collision.checkRect(player, o)) {
 
-            if (score > highscore) {
-                highscore = Math.floor(score);
-                localStorage.setItem("highscore", highscore);
+                if (player.isDead) break;
+
+                player.die();
+                createjs.Sound.play("hit", { volume: 0.7 });
+
+                if (typeof obstacleManager.stop === "function") {
+                    obstacleManager.stop();
+                }
+
+                bgLayers.forEach(layer => {
+                    layer._savedSpeed = layer.speed ?? layer.defaultSpeed ?? 8;
+                    layer.speed = 0;
+                });
+
+                const deathDuration =
+                    (player.deadFrames && player.framesPerImage)
+                        ? player.deadFrames.length * player.framesPerImage * (1000 / 60)
+                        : 1000; 
+
+                player.isDead = true;
+
+                setTimeout(() => {
+                    gameOver = true;
+
+                    if (score > highscore) {
+                        highscore = Math.floor(score);
+                        localStorage.setItem("highscore", highscore);
+                    }
+
+                    const msg = gameOverContainer.getChildByName("scoreMsg");
+                    msg.text = "Pontuação final: " + Math.floor(score);
+
+                    gameOverContainer.visible = true;
+
+                    stage.update();
+                }, Math.max(50, deathDuration));
+                break; 
             }
-
-            const msg = gameOverContainer.getChildByName("scoreMsg");
-            msg.text = "Pontuação final: " + Math.floor(score);
-
-            gameOverContainer.visible = true;
         }
-    });
+    }
 
-    score += 0.1;
+    if (!player || (!player.isDead && !gameOver)) {
+        score += 0.1;
+    }
+
     scoreText.text = "Pontuação: " + Math.floor(score);
     highscoreText.text = "Recorde: " + highscore;
 
@@ -254,8 +303,17 @@ function restartGame() {
     difficulty = 1;
     gameOverContainer.visible = false;
 
-    player.reset();
-    obstacleManager.reset();
+    bgLayers.forEach(layer => {
+        layer.speed = layer._savedSpeed ?? layer.defaultSpeed ?? 8;
+    });
+
+    if (player && typeof player.reset === "function") player.reset();
+    if (obstacleManager && typeof obstacleManager.reset === "function") obstacleManager.reset();
+
+    if (player) {
+        player.isDead = false;
+    }
+
     stage.update();
 }
 
