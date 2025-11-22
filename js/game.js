@@ -8,15 +8,27 @@ let gameOverContainer;
 let bgContainer, gameContainer, uiContainer;
 let difficulty = 1;
 
+let musicInstance = null;
+let musicOn = true; // música começa ligada
+
 function init() {
     const canvas = document.getElementById("gameCanvas");
     stage = new createjs.Stage(canvas);
     highscore = Number(localStorage.getItem("highscore")) || 0;
+
     bgContainer = new createjs.Container();
     gameContainer = new createjs.Container();
     uiContainer = new createjs.Container();
 
     stage.addChild(bgContainer, gameContainer, uiContainer);
+
+    // 🔊 REGISTRA SONS
+    createjs.Sound.registerSound("assets/sound effects/ES_Trilha sonora 2.mp3", "bgm");
+    createjs.Sound.registerSound("assets/sound effects/ES_jump.mp3", "jump");
+    createjs.Sound.registerSound("assets/sound effects/ES_Damage.mp3", "hit");
+
+    // Quando o arquivo da música carregar → começar música
+    createjs.Sound.on("fileload", startMusic);
 
     loadBackground();
 
@@ -40,14 +52,72 @@ function init() {
     highscoreText.shadow = new createjs.Shadow("#000", 2, 2, 4);
     uiContainer.addChild(highscoreText);
 
+    // Criar o botão de música
+    createMusicButton();
+
+    // Garante que UI sempre fica por cima
+    stage.setChildIndex(uiContainer, stage.numChildren - 1);
+
     createjs.Ticker.framerate = 60;
     createjs.Ticker.on("tick", update);
 
+    // Pulo + som de pulo
     document.addEventListener("keydown", (e) => {
-        if (e.code === "Space") player.jump();
+        if (e.code === "Space") {
+            player.jump();
+            createjs.Sound.play("jump", { volume: 0.6 });
+        }
     });
 
     createGameOverScreen();
+}
+
+function toggleMusic(e) {
+    const label = e.currentTarget.getChildByName("label");
+
+    if (musicOn) {
+        if (musicInstance) musicInstance.stop();
+        musicOn = false;
+        label.text = "Música: OFF";
+    } else {
+        musicInstance = createjs.Sound.play("bgm", { loop: -1, volume: 0.3 });
+        musicOn = true;
+        label.text = "Música: ON";
+    }
+
+    stage.update();
+}
+
+function createMusicButton() {
+    const button = new createjs.Container();
+    button.x = stage.canvas.width - 160;
+    button.y = 20;
+
+    const bg = new createjs.Shape();
+    bg.graphics.beginFill("#333").drawRoundRect(0, 0, 140, 40, 10);
+
+    const label = new createjs.Text("Música: ON", "20px Arial", "#fff");
+    label.name = "label";
+    label.x = 15;
+    label.y = 8;
+
+    button.addChild(bg, label);
+    button.cursor = "pointer";
+
+    button.on("click", toggleMusic);
+
+    uiContainer.addChild(button);
+
+    uiContainer.setChildIndex(button, uiContainer.numChildren - 1);
+}
+
+function startMusic() {
+    if (!musicOn) return;
+
+    musicInstance = createjs.Sound.play("bgm", {
+        loop: -1,
+        volume: 0.3
+    });
 }
 
 function createGameOverScreen() {
@@ -86,9 +156,7 @@ function createGameOverScreen() {
             location.reload();
         }
     });
-
 }
-
 
 function loadBackground() {
     const filenames = ["fundo.png", "chao.png"];
@@ -98,33 +166,33 @@ function loadBackground() {
         img.src = encodeURI("assets/background/" + file);
         img.onload = () => {
 
-        const scale = 0.5;
+            const scale = 0.5;
 
-        const bmp1 = new createjs.Bitmap(img);
-        const bmp2 = new createjs.Bitmap(img);
+            const bmp1 = new createjs.Bitmap(img);
+            const bmp2 = new createjs.Bitmap(img);
 
-        bmp1.scaleX = bmp1.scaleY = scale;
-        bmp2.scaleX = bmp2.scaleY = scale;
+            bmp1.scaleX = bmp1.scaleY = scale;
+            bmp2.scaleX = bmp2.scaleY = scale;
 
-        const scaledWidth = img.width * scale;
-        const scaledHeight = img.height * scale;
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
 
-        const groundY = 502;
-        const yPos = groundY - scaledHeight;
+            const groundY = 502;
+            const yPos = groundY - scaledHeight;
 
-        bmp1.y = bmp2.y = yPos;
+            bmp1.y = bmp2.y = yPos;
 
-        bmp1.x = 0;
-        bmp2.x = scaledWidth;
+            bmp1.x = 0;
+            bmp2.x = scaledWidth;
 
-        bgContainer.addChild(bmp1, bmp2);
+            bgContainer.addChild(bmp1, bmp2);
 
-        bgLayers.push({
-            bmp1,
-            bmp2,
-            speed: 8,
-            width: scaledWidth
-        });
+            bgLayers.push({
+                bmp1,
+                bmp2,
+                speed: 8,
+                width: scaledWidth
+            });
         };
     });
 }
@@ -155,11 +223,17 @@ function update() {
 
     obstacleManager.obstacles.forEach(o => {
         if (Collision.checkRect(player, o)) {
+
+            // 🔊 SOM DE IMPACTO AO BATER NO ESPINHO
+            createjs.Sound.play("hit", { volume: 0.7 });
+
             gameOver = true;
+
             if (score > highscore) {
                 highscore = Math.floor(score);
                 localStorage.setItem("highscore", highscore);
             }
+
             const msg = gameOverContainer.getChildByName("scoreMsg");
             msg.text = "Pontuação final: " + Math.floor(score);
 
@@ -184,6 +258,5 @@ function restartGame() {
     obstacleManager.reset();
     stage.update();
 }
-
 
 window.onload = init;
