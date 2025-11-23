@@ -56,7 +56,7 @@ class SkyObstacle {
     }
 
     update() {
-        this.sprite.x -= 10 * difficulty;
+        this.sprite.x -= 8 * difficulty;
     }
 
     isOffscreen() {
