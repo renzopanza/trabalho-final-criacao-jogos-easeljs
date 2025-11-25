@@ -38,6 +38,10 @@ O jogo foi otimizado para teclado (Desktop):
     * *EaselJS:* Para renderização de gráficos e sprites.
     * *SoundJS:* Para gerenciamento de áudio.
     * *PreloadJS:* Para carregamento de assets.
+ 
+## 🛠️ Prints do jogo:
+<img width="955" height="481" alt="image" src="https://github.com/user-attachments/assets/2bd4fc36-d4f8-4122-83c4-d2f7e8ef60f5" />
+
 
 ## 👥 Integrantes do Grupo
 
